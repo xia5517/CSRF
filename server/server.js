@@ -9,45 +9,50 @@ const { db, getReqData } = require('./utils')
 const PORT = 8000
 const app = new Koa()
 const router = new KoaRouter()
-
 router.all('/api/login', ctx => {
     const { body: { id } } = getReqData(ctx)
     if (db[id]) {
-        ctx.cookies.set('userid', id)
-        ctx.redirect('/')
+      ctx.body = {
+        errno: 0,
+        data: id
+      }
     } else {
-        ctx.redirect('/login.html')
+      ctx.body = { errno: 666 }
     }
-})
-
-router.all('/api/appinfo', ctx => {
-    const { id } = getReqData(ctx)
-    console.log(`当前时间 ${Date.now()}: debug 的数据是 id: `, id)
-    if (db[id]) {
+  })
+  
+  /**
+   * 获取初始化用户信息
+   * 致敬我们项目中的接口路径
+   */
+  router.all('/api/appinfo', ctx => {
+    const { token } = getReqData(ctx)
+    if (db[token]) {
       ctx.body = {
         errno: 0,
         data: {
-          money: db[id],
-          userName: id
+          money: db[token],
+          userName: token
         }
       }
     } else {
       ctx.body = { errno: 666 }
     }
   })
-
-router.post('/api/transfer', ctx => {
-    const { body: { toUser, money }, id } = getReqData(ctx)
-    if (!id) {
-        ctx.body = { errno: 666, errmsg: '您尚未登录请登录' }
-        return
+  
+  // 转账, 余额不足之类的异常情况统统不考虑
+  router.post('/api/transfer', ctx => {
+    const { body: { toUser, money }, token } = getReqData(ctx)
+    if (!token) {
+      ctx.body = {
+        errno: 666, errmsg: '用户未登陆'
+      }
+      return
     }
-    console.log(`当前时间 ${Date.now()}: debug 的数据是 toUser: `, toUser)
-    console.log(`当前时间 ${Date.now()}: debug 的数据是 money: `, money)
     db[toUser] += (+money)
-    db[id] -= (+money)
+    db[token] -= (+money)
     ctx.body = { errno: 0 }
-})
+  })  
 
 app.use(koaBody())
 app.use(router.routes(), router.allowedMethods())

@@ -2,7 +2,7 @@ module.exports = (ctx) => {
     const {
         query,
         request: {
-        body
+            body
         }
     } = ctx
     const id = ctx.cookies.get('userid')
